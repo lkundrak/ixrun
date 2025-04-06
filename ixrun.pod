@@ -1,0 +1,127 @@
+=head1 NAME
+
+ixrun - Run a PC/IX program
+
+=head1 SYNOPSIS
+
+=over 4
+
+=item B<ixrun> [-r <I<chroot>>] [-C <I<chdir>>] [--] <I<exec>> [<I<args>> ...]
+
+=back
+
+=head1 DESCRIPTION
+
+B<ixrun> loads and executes a program built for PC/IX in an
+environment. PC/IX is a UNIX operating system for an IBM PC
+and IBM PC/XT with a Intel 8088 processor.
+
+The program emulates most system calls, including terminal handling, and
+basic 8087 emulation. Consult L</"BUGS"> section for ommissions.
+Accurate processor emulation is achieved with use of B<libx86emu>.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-r>
+
+Call L<chroot(2)> to this directory before executing the program.
+
+This is useful to make absolute file name lookups work, but is
+normally a privileged opetation.
+
+=item B<-C>
+
+Call L<chdir(2)> to this directory before executing the program.
+
+Can be combined with B<-r>.
+
+=item [--]
+
+The optional separator that can be used e.g. if the executable
+name starts with a dash.
+
+=item <I<exec>> [<I<args>> ...]
+
+Command and arguments. Executable is read after B<-r> and B<-C>
+are processed, therefore is relative to them.
+
+=back
+
+=head1 EXAMPLES
+
+=over
+
+=item B<< ixrun PCIXROOT/bin/date >>
+
+Just run a command.
+
+=item B<< unshare -r env -i TERM=vt100 ixrun -r PCIXROOT -C /usr/guest /bin/sh >>
+
+Run shell in a complete PC/IX environment -- change root to a PC/IX
+installation and move into it, with a clean environment.
+
+=back
+
+=head1 BUGS
+
+Bounds controls (e.g. in syscall parameters) are not checked.
+The program doesn't run sandboxed, it can take over the emulator.
+Do not run with untrusted programs!
+
+Calls L<mount(2)>, L<umount(2)>, L<stime(2)>, L<ptrace(2)>, L<times(2)>,
+L<profil(2)>, L<lockf(2)>, L<halt(2)>, L<acct(2)>, L<ustat(2)> and
+L<ulimit(2)> are not implemented.
+
+Hooking signals is not supported.
+
+There are no emulated devices and L<ioctl(2)> only works for a
+limited few terminal operations.
+
+Non-a.out files are always run with F</bin/sh> interpreter. Shebangs
+are not supported.
+
+Environment size in modern Linux distributions consumes a lot of heap.
+Consider using L<env(1)> (see L</"EXAMPLES">) to strip it down.
+
+Environment vector is ordered differently.
+
+The 8087 emulation is very incomplete, only sufficient to run L<cc(1)>.
+
+The 8087 emulation relies on native float representation being
+compatible with a 8087. Works on I<x86> and I<x86_64>, may not work
+elsewhere.
+
+File names are not rewritted. To use absolute paths in a PC/IX tree,
+use B<-r> option.
+
+Chrooting requires I<CAP_CHROOT>. Use L<unshare(1)> (see L</"EXAMPLES">)
+to obtain it in unprivileged environment.
+
+Probably only works on GNU/Linux. Directory emulation uses
+L<memfd_create(2)> which is specific to Linux.
+
+With L<stat(2)> and direcotry reads, the 32-bit or 64-bit host inodes
+are just truncated to 16-bits (as opposed to translated), potentially
+causing collisions confusing the userspace.
+
+=head1 AUTHORS
+
+=over
+
+=item * Lubomir Rintel <L<lkundrak@v3.sk>>
+
+=back
+
+Nobody else helped me.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+The source code repository can be obtained from
+L<https://github.com/lkundrak/ixrun>. Bug fixes and feature
+ehancements licensed under same conditions as ixrun are welcome
+via GIT pull requests.
